@@ -36,12 +36,17 @@ display:block;
 margin-top:15px;
 }
 
-input,select{
+input,select,textarea{
 width:100%;
 padding:8px;
 margin-top:5px;
 border:1px solid #ccc;
 border-radius:5px;
+}
+
+textarea{
+height:80px;
+resize:none;
 }
 
 button{
@@ -82,11 +87,6 @@ width:80px;
 margin-top:10px;
 }
 
-.error{
-font-size:40px;
-color:red;
-}
-
 @keyframes spin{
 0%{transform:rotate(0deg);}
 100%{transform:rotate(360deg);}
@@ -107,8 +107,8 @@ color:red;
 <label>Usuario (u)</label>
 <input type="text" id="usuario" required>
 
-<label>Color equipo</label>
-<select id="color" required>
+<label>Equipo</label>
+<select id="equipo" required>
 <option value="">Seleccionar</option>
 <option>Azul</option>
 <option>Amarillo</option>
@@ -116,8 +116,12 @@ color:red;
 <option>Rojo</option>
 </select>
 
-<label>Subir adjuntos (máx 60)</label>
-<input type="file" id="adjuntos" multiple accept="image/png,image/jpeg">
+<label>Números de caso (separados por coma)</label>
+<textarea id="casos" placeholder="Ejemplo: 3738301,3738302,3738303"></textarea>
+
+<div id="contador" style="margin-top:5px;font-size:14px;color:#555;">
+Cantidad detectada: 0
+</div>
 
 <button id="btnEnviar" type="submit">Enviar</button>
 
@@ -129,6 +133,33 @@ color:red;
 
 <script>
 
+const textarea = document.getElementById("casos")
+const contador = document.getElementById("contador")
+
+textarea.addEventListener("input", function(){
+
+let texto = textarea.value.trim()
+
+if(texto === ""){
+contador.innerText = "Cantidad detectada: 0"
+return
+}
+
+let lista = texto.split(",")
+
+let cantidad = lista.filter(x => x.trim() !== "").length
+
+contador.innerText = "Cantidad detectada: " + cantidad
+
+if(cantidad > 60){
+contador.style.color="red"
+contador.innerText="Máximo permitido: 60 casos"
+}else{
+contador.style.color="#555"
+}
+
+})
+
 const form = document.getElementById("formulario")
 const estado = document.getElementById("estado")
 const boton = document.getElementById("btnEnviar")
@@ -137,28 +168,20 @@ form.addEventListener("submit", async function(e){
 
 e.preventDefault()
 
-let usuario = document.getElementById("usuario").value
-let color = document.getElementById("color").value
-let archivos = document.getElementById("adjuntos").files
-
-if(archivos.length > 60){
-alert("Máximo 60 archivos permitidos")
-return
-}
-
-boton.disabled = true
+boton.disabled=true
 
 estado.style.display="block"
-estado.innerHTML = '<div class="spinner"></div><p>Cargando adjuntos...</p>'
+estado.innerHTML='<div class="spinner"></div><p>Registrando casos...</p>'
+
+let usuario = document.getElementById("usuario").value
+let equipo = document.getElementById("equipo").value
+let casos = document.getElementById("casos").value
 
 let formData = new FormData()
 
 formData.append("usuario",usuario)
-formData.append("color",color)
-
-for(let i=0;i<archivos.length;i++){
-formData.append("files",archivos[i])
-}
+formData.append("equipo",equipo)
+formData.append("casos",casos)
 
 try{
 
@@ -169,31 +192,16 @@ body:formData
 
 let data = await response.json()
 
-if(data.status === "success"){
-
 estado.innerHTML = `
 <img src="tilde-verificacion.png" class="success-img">
-<p>Adjuntos registrados correctamente</p>
-<p>Número de caso: <b>${data.ticket}</b></p>
+<p>Registro realizado correctamente</p>
+<p>Formulario N°: <b>${data.ticket}</b></p>
 `
-
-}
-
-else{
-
-estado.innerHTML = `
-<div class="error">X</div>
-<p>No se pudo registrar la solicitud</p>
-`
-
-}
 
 }catch(error){
 
-estado.innerHTML = `
-<div class="error">X</div>
-<p>Error de conexión</p>
-`
+estado.innerHTML="<p>Error al registrar</p>"
+boton.disabled=false
 
 }
 
