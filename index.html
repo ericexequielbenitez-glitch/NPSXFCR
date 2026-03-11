@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+
+<meta charset="UTF-8">
+<title>Formulario PRINT NPS FCR</title>
+
+<style>
+
+body{
+font-family: Arial;
+background:#f4f6f8;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+}
+
+.container{
+background:white;
+padding:30px;
+border-radius:10px;
+width:400px;
+box-shadow:0 5px 15px rgba(0,0,0,0.1);
+}
+
+h2{
+text-align:center;
+}
+
+label{
+font-weight:bold;
+display:block;
+margin-top:15px;
+}
+
+input,select{
+width:100%;
+padding:8px;
+margin-top:5px;
+border-radius:6px;
+border:1px solid #ccc;
+}
+
+button{
+margin-top:20px;
+width:100%;
+padding:10px;
+background:#0066ff;
+color:white;
+border:none;
+border-radius:6px;
+cursor:pointer;
+font-size:16px;
+}
+
+button:hover{
+background:#0052cc;
+}
+
+.loading{
+text-align:center;
+margin-top:20px;
+display:none;
+}
+
+.success{
+text-align:center;
+margin-top:20px;
+display:none;
+font-size:18px;
+color:green;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Formulario PRINT NPS FCR</h2>
+
+<form id="ticketForm">
+
+<label>Usuario (u)</label>
+<input type="text" id="usuario" required>
+
+<label>Color equipo</label>
+<select id="color">
+<option>Azul</option>
+<option>Amarillo</option>
+<option>Verde</option>
+<option>Rojo</option>
+</select>
+
+<label>Subir adjuntos (hasta 60)</label>
+<input type="file" id="adjuntos" multiple accept="image/png,image/jpeg">
+
+<button type="submit">Enviar</button>
+
+</form>
+
+<div class="loading" id="loading">
+⏳ Cargando adjuntos...
+</div>
+
+<div class="success" id="success"></div>
+
+</div>
+
+<script>
+
+document.getElementById("ticketForm").addEventListener("submit", async function(e){
+
+e.preventDefault()
+
+let usuario = document.getElementById("usuario").value
+let color = document.getElementById("color").value
+let archivos = document.getElementById("adjuntos").files
+
+if(archivos.length > 60){
+alert("Máximo 60 archivos")
+return
+}
+
+document.getElementById("loading").style.display = "block"
+
+let formData = new FormData()
+formData.append("usuario",usuario)
+formData.append("color",color)
+
+for(let i=0;i<archivos.length;i++){
+formData.append("files",archivos[i])
+}
+
+let ticket = "Caso:" + Math.floor(1000000 + Math.random()*9000000)
+
+formData.append("ticket",ticket)
+
+try{
+
+await fetch("TU_SCRIPT_URL_AQUI",{
+method:"POST",
+body:formData
+})
+
+document.getElementById("loading").style.display = "none"
+
+document.getElementById("success").style.display = "block"
+
+document.getElementById("success").innerHTML =
+"✔ Adjuntos registrados<br><br>Número de ticket:<br><b>"+ticket+"</b>"
+
+}catch(error){
+
+document.getElementById("loading").innerHTML="Error al enviar"
+
+}
+
+})
+
+</script>
+
+</body>
+</html>
