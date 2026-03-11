@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
 
 <meta charset="UTF-8">
@@ -9,7 +10,7 @@
 
 body{
 font-family: Arial;
-background:#f4f6f8;
+background:#f4f4f4;
 display:flex;
 justify-content:center;
 align-items:center;
@@ -19,13 +20,14 @@ height:100vh;
 .container{
 background:white;
 padding:30px;
-border-radius:10px;
-width:400px;
-box-shadow:0 5px 15px rgba(0,0,0,0.1);
+width:420px;
+border-radius:8px;
+box-shadow:0 4px 12px rgba(0,0,0,0.1);
 }
 
 h2{
 text-align:center;
+margin-bottom:20px;
 }
 
 label{
@@ -38,38 +40,56 @@ input,select{
 width:100%;
 padding:8px;
 margin-top:5px;
-border-radius:6px;
 border:1px solid #ccc;
+border-radius:5px;
 }
 
 button{
 margin-top:20px;
 width:100%;
 padding:10px;
-background:#0066ff;
+background:#2b6cff;
 color:white;
 border:none;
-border-radius:6px;
-cursor:pointer;
+border-radius:5px;
 font-size:16px;
+cursor:pointer;
 }
 
-button:hover{
-background:#0052cc;
+button:disabled{
+background:#9aa7c7;
+cursor:not-allowed;
 }
 
-.loading{
+.status{
 text-align:center;
 margin-top:20px;
 display:none;
 }
 
-.success{
-text-align:center;
-margin-top:20px;
-display:none;
-font-size:18px;
-color:green;
+.spinner{
+border:4px solid #f3f3f3;
+border-top:4px solid #2b6cff;
+border-radius:50%;
+width:30px;
+height:30px;
+animation:spin 1s linear infinite;
+margin:auto;
+}
+
+.success-img{
+width:80px;
+margin-top:10px;
+}
+
+.error{
+font-size:40px;
+color:red;
+}
+
+@keyframes spin{
+0%{transform:rotate(0deg);}
+100%{transform:rotate(360deg);}
 }
 
 </style>
@@ -82,37 +102,38 @@ color:green;
 
 <h2>Formulario PRINT NPS FCR</h2>
 
-<form id="ticketForm">
+<form id="formulario">
 
 <label>Usuario (u)</label>
 <input type="text" id="usuario" required>
 
 <label>Color equipo</label>
-<select id="color">
+<select id="color" required>
+<option value="">Seleccionar</option>
 <option>Azul</option>
 <option>Amarillo</option>
 <option>Verde</option>
 <option>Rojo</option>
 </select>
 
-<label>Subir adjuntos (hasta 60)</label>
+<label>Subir adjuntos (máx 60)</label>
 <input type="file" id="adjuntos" multiple accept="image/png,image/jpeg">
 
-<button type="submit">Enviar</button>
+<button id="btnEnviar" type="submit">Enviar</button>
 
 </form>
 
-<div class="loading" id="loading">
-⏳ Cargando adjuntos...
-</div>
-
-<div class="success" id="success"></div>
+<div class="status" id="estado"></div>
 
 </div>
 
 <script>
 
-document.getElementById("ticketForm").addEventListener("submit", async function(e){
+const form = document.getElementById("formulario")
+const estado = document.getElementById("estado")
+const boton = document.getElementById("btnEnviar")
+
+form.addEventListener("submit", async function(e){
 
 e.preventDefault()
 
@@ -121,13 +142,17 @@ let color = document.getElementById("color").value
 let archivos = document.getElementById("adjuntos").files
 
 if(archivos.length > 60){
-alert("Máximo 60 archivos")
+alert("Máximo 60 archivos permitidos")
 return
 }
 
-document.getElementById("loading").style.display = "block"
+boton.disabled = true
+
+estado.style.display="block"
+estado.innerHTML = '<div class="spinner"></div><p>Cargando adjuntos...</p>'
 
 let formData = new FormData()
+
 formData.append("usuario",usuario)
 formData.append("color",color)
 
@@ -135,27 +160,40 @@ for(let i=0;i<archivos.length;i++){
 formData.append("files",archivos[i])
 }
 
-let ticket = "Caso:" + Math.floor(1000000 + Math.random()*9000000)
-
-formData.append("ticket",ticket)
-
 try{
 
-await fetch("TU_SCRIPT_URL_AQUI",{
+let response = await fetch("TU_SCRIPT_URL",{
 method:"POST",
 body:formData
 })
 
-document.getElementById("loading").style.display = "none"
+let data = await response.json()
 
-document.getElementById("success").style.display = "block"
+if(data.status === "success"){
 
-document.getElementById("success").innerHTML =
-"✔ Adjuntos registrados<br><br>Número de ticket:<br><b>"+ticket+"</b>"
+estado.innerHTML = `
+<img src="tilde-verificacion.png" class="success-img">
+<p>Adjuntos registrados correctamente</p>
+<p>Número de caso: <b>${data.ticket}</b></p>
+`
+
+}
+
+else{
+
+estado.innerHTML = `
+<div class="error">X</div>
+<p>No se pudo registrar la solicitud</p>
+`
+
+}
 
 }catch(error){
 
-document.getElementById("loading").innerHTML="Error al enviar"
+estado.innerHTML = `
+<div class="error">X</div>
+<p>Error de conexión</p>
+`
 
 }
 
@@ -164,4 +202,5 @@ document.getElementById("loading").innerHTML="Error al enviar"
 </script>
 
 </body>
+
 </html>
